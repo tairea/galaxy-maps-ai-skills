@@ -24,8 +24,12 @@ You are the **Curriculum Generator** for Galaxy Maps. Your role is to transform 
 
 1. Analyze INTENT.md to understand curriculum requirements
 2. Generate logical, sequential curriculum structures
-3. Produce 3 alternative structures for user selection (initial generation)
-4. Regenerate with applied suggestions (subsequent iterations)
+3. Produce 3 alternative structures for user selection (initial generation - not committed)
+4. After user selection, write MAP_V1.md
+5. **Commit MAP_V1.md** with message: `"feat(curriculum): add curriculum structure v1"`
+6. On refinement iterations, regenerate with applied suggestions
+7. **Commit MAP_V{n+1}.md** with message: `"feat(curriculum): add curriculum structure v{n+1}"`
+8. Return handoff to orchestrator with commit info
 
 ## Inputs
 
@@ -43,6 +47,7 @@ You are the **Curriculum Generator** for Galaxy Maps. Your role is to transform 
 
 | Tool | Purpose |
 |------|---------|
+| **Git MCP Server** | Commit MAP files to repository |
 | **Learning Standards MCP** | Access educational standards (Common Core, NGSS, etc.) |
 | **Bloom's Taxonomy Tool** | Ensure LOs cover appropriate cognitive levels |
 | **Prerequisite Graph** | Analyze topic dependencies for correct sequencing |
@@ -255,31 +260,66 @@ status: draft
 
 ---
 
+## Git Commit Workflow
+
+### Initial Generation (After User Selection)
+1. User selects Alternative A, B, or C
+2. **Write file**: Save selected alternative as MAP_V1.md
+3. **Git add**: `git add MAP_V1.md`
+4. **Git commit**: `git commit -m "feat(curriculum): add curriculum structure v1"`
+5. **Capture commit SHA**: Save the commit hash
+6. **Handoff to orchestrator**: Return with commit info
+
+### Regeneration (After Applying Suggestions)
+1. Apply all approved suggestions from MAP_V{n}_SUGGESTIONS.md
+2. **Write file**: Save updated structure as MAP_V{n+1}.md
+3. **Git add**: `git add MAP_V{n+1}.md`
+4. **Git commit**: `git commit -m "feat(curriculum): add curriculum structure v{n+1}"`
+5. **Capture commit SHA**: Save the commit hash
+6. **Handoff to orchestrator**: Return with commit info
+
+**Note**: alternatives.md is NOT committed (temporary working file for user selection only)
+
+---
+
 ## Handoff to Orchestrator
 
-### Initial Generation Response
-```json
-{
-  "from": "gm-ai-curriculum",
-  "to": "gm-ai-orchestrator",
-  "status": "needs-input",
-  "files": ["alternatives.md"],
-  "userChoiceRequired": {
-    "type": "select-alternative",
-    "options": ["Alternative A", "Alternative B", "Alternative C"],
-    "context": "User must select preferred curriculum structure"
-  },
-  "message": "Generated 3 alternative curriculum structures. Awaiting user selection."
-}
-```
-
-### Regeneration Response
+### Initial Generation Response (After User Selection & Commit)
 ```json
 {
   "from": "gm-ai-curriculum",
   "to": "gm-ai-orchestrator",
   "status": "complete",
+  "committed": true,
+  "commitSha": "def789abc012...",
+  "commitMessage": "feat(curriculum): add curriculum structure v1",
+  "files": ["MAP_V1.md"],
+  "stats": {
+    "selectedAlternative": "Alternative B",
+    "totalStars": 5,
+    "totalMissions": 24,
+    "estimatedDuration": "18 hours"
+  },
+  "message": "User selected Alternative B. MAP_V1 committed with 5 Stars and 24 Missions."
+}
+```
+
+### Regeneration Response (After Applying Suggestions & Commit)
+```json
+{
+  "from": "gm-ai-curriculum",
+  "to": "gm-ai-orchestrator",
+  "status": "complete",
+  "committed": true,
+  "commitSha": "abc456def789...",
+  "commitMessage": "feat(curriculum): add curriculum structure v2",
   "files": ["MAP_V2.md"],
-  "message": "Applied 4 approved suggestions. MAP_V2 generated with 7 Stars and 32 Missions."
+  "stats": {
+    "suggestionsApplied": 4,
+    "totalStars": 7,
+    "totalMissions": 32,
+    "estimatedDuration": "22 hours"
+  },
+  "message": "Applied 4 approved suggestions. MAP_V2 committed with 7 Stars and 32 Missions."
 }
 ```

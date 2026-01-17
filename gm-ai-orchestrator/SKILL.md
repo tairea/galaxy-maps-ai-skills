@@ -27,12 +27,15 @@ You are the **Main Orchestrator** for Galaxy Map creation. You coordinate all ot
 
 ## Primary Responsibilities
 
-1. Initialize and manage the galaxy map git repository
+1. **Initialize git repository** (`git init` only)
 2. Orchestrate the multi-agent workflow in correct sequence
 3. Handle user decisions between phases
 4. Spawn sub-agents using the Skill tool or Task tool
-5. Commit and push files at appropriate checkpoints
-6. Transform final repo contents to saveGalaxyMap() JSON format
+5. Transform final repo contents to saveGalaxyMap() JSON format
+6. **Commit final GALAXY_MAP.json archive**
+7. **Push to remote repository**
+
+**IMPORTANT**: Individual skills commit their own outputs. Orchestrator ONLY commits the final GALAXY_MAP.json and handles push.
 
 ## Inputs
 
@@ -52,9 +55,9 @@ You are the **Main Orchestrator** for Galaxy Map creation. You coordinate all ot
 
 | Tool | Purpose |
 |------|---------|
-| **Git MCP Server** | Repository management (init, commit, push, branch) |
+| **Git MCP Server** | Init repo, final commit (GALAXY_MAP.json), push to remote ONLY |
 | **GitHub MCP Server** | Create repos, manage PRs, handle remote operations |
-| **File System MCP** | Read/write files in galaxy-maps directories |
+| **File System MCP** | Read committed files for transformation |
 | **Skill Tool** | Invoke other gm-ai-* skills by name |
 | **Firebase/Firestore MCP** | Direct database calls to saveGalaxyMap() |
 
@@ -64,12 +67,14 @@ You are the **Main Orchestrator** for Galaxy Map creation. You coordinate all ot
 
 ### Phase 1: Intent Capture
 ```
-ACTION: Invoke gm-ai-intent skill
-WAIT_FOR: INTENT.md file
-THEN:
+ACTION:
   - Create repo: ~/galaxy-maps/{slug}/
   - git init
-  - Commit INTENT.md
+  - Invoke gm-ai-intent skill
+
+WAIT_FOR: gm-ai-intent handoff (INTENT.md committed by skill)
+
+THEN:
   - Ask user: "Ready to generate curriculum structure?"
 ```
 
@@ -81,12 +86,10 @@ HANDOFF: {
   files: ["INTENT.md"],
   repoPath: "..."
 }
-WAIT_FOR: 3 alternative structures
+
+WAIT_FOR: gm-ai-curriculum handoff (MAP_V1.md committed by skill)
+
 THEN:
-  - Present alternatives to user
-  - User selects one
-  - Save as MAP_V1.md
-  - Commit MAP_V1.md
   - Ask user: "Would you like the curriculum critiqued?"
 ```
 
@@ -99,11 +102,12 @@ IF user wants critique:
     files: ["INTENT.md", "MAP_V{n}.md"],
     repoPath: "..."
   }
-  WAIT_FOR: Interactive session complete, MAP_V{n}_SUGGESTIONS.md
+
+  WAIT_FOR: gm-ai-curriculum-critiquer handoff (MAP_V{n}_SUGGESTIONS.md committed by skill)
+
   THEN:
     - Invoke gm-ai-curriculum again with suggestions
-    - Save as MAP_V{n+1}.md
-    - Commit both files
+    - WAIT_FOR: gm-ai-curriculum handoff (MAP_V{n+1}.md committed by skill)
     - Ask user: "Another critique round, or proceed to side-quests?"
 ```
 
@@ -115,9 +119,10 @@ HANDOFF: {
   files: ["INTENT.md", "MAP_V{final}.md"],
   repoPath: "..."
 }
-WAIT_FOR: Branch files in branches/
+
+WAIT_FOR: gm-ai-branching handoff (branches/* committed by skill)
+
 THEN:
-  - Commit branches/
   - Ask user: "Ready to generate mission content?"
 ```
 
@@ -132,9 +137,10 @@ FOR EACH star (in parallel):
     context: { INTENT.md contents },
     outputPath: "missions/star_{n}/"
   }
-WAIT_FOR: All parallel agents complete
+
+WAIT_FOR: All parallel agents complete (each commits missions/star_{n}/* independently)
+
 THEN:
-  - Commit missions/
   - Ask user: "Would you like missions critiqued?"
 ```
 
@@ -148,33 +154,42 @@ IF user wants mission critique:
       files: ["MISSION_{x}_{y}.md", "MISSION_{x}_{y}.html"],
       context: { INTENT.md, star context, next mission LO }
     }
-  WAIT_FOR: Interactive sessions complete
+
+  WAIT_FOR: Interactive sessions complete (suggestions committed by critiquer)
+
   THEN:
-    - For each suggestion file, invoke gm-ai-mission-builder to regenerate
-    - Commit updated missions
+    - For each approved suggestion, invoke gm-ai-mission-builder to regenerate
+    - WAIT_FOR: Updated missions committed by mission-builder
 ```
 
 ### Phase 7: Finalize & Save
 ```
 ACTION: Transform repo to JSON
 STEPS:
-  1. Read INTENT.md → extract title, description
-  2. Read MAP_V{final}.md → parse stars structure
-  3. For each star, for each mission:
+  1. Read all committed files from repository
+  2. Read INTENT.md → extract title, description
+  3. Read MAP_V{final}.md → parse stars structure
+  4. For each star, for each mission:
      - Read missions/star_n/MISSION_n_m.html
      - Attach as missionInstructionsHtmlString
-  4. Construct saveGalaxyMap payload
-  5. Call saveGalaxyMap() cloud function
-  6. Return courseId to user
-  7. Commit GALAXY_MAP.json as archive
-  8. Push to remote
+  5. Construct saveGalaxyMap payload
+  6. Write GALAXY_MAP.json to repo
+  7. git add GALAXY_MAP.json
+  8. git commit -m "chore(archive): add final GALAXY_MAP.json"
+  9. git push origin main
+  10. Call saveGalaxyMap() cloud function
+  11. Return courseId to user
 ```
 
 ---
 
 ## Git Operations
 
-### Repository Initialization
+### Orchestrator-Only Git Responsibilities
+
+**IMPORTANT**: Individual skills commit their own outputs. Orchestrator ONLY handles:
+
+1. **Repository Initialization** (Phase 1):
 ```bash
 mkdir -p ~/galaxy-maps/{slug}
 cd ~/galaxy-maps/{slug}
@@ -182,16 +197,28 @@ git init
 git remote add origin {github-url}  # if provided
 ```
 
-### Commit Points
-| Phase | Message Template | Files |
-|-------|------------------|-------|
-| 1 | `Initialize galaxy map: {title}` | INTENT.md |
-| 2 | `Add curriculum structure v1` | MAP_V1.md |
-| 3 | `Apply structure critique → v{n}` | MAP_V{n}_SUGGESTIONS.md, MAP_V{n+1}.md |
-| 4 | `Add branching side-quests` | branches/* |
-| 5 | `Generate missions for star {n}` | missions/star_{n}/* |
-| 6 | `Apply mission critique: {mission}` | missions/star_{n}/MISSION_*_SUGGESTIONS.md |
-| 7 | `Finalize for publication` | GALAXY_MAP.json |
+2. **Final Archive Commit** (Phase 7):
+```bash
+git add GALAXY_MAP.json
+git commit -m "chore(archive): add final GALAXY_MAP.json"
+```
+
+3. **Push to Remote** (Phase 7):
+```bash
+git push origin main
+```
+
+### Skills Self-Commit Schedule
+| Phase | Skill | Message Template | Files |
+|-------|-------|------------------|-------|
+| 1 | gm-ai-intent | `feat(intent): capture curriculum intent for {title}` | INTENT.md |
+| 2 | gm-ai-curriculum | `feat(curriculum): add curriculum structure v{n}` | MAP_V{n}.md |
+| 3 | gm-ai-curriculum-critiquer | `review(curriculum): add suggestions for MAP v{n}` | MAP_V{n}_SUGGESTIONS.md |
+| 4 | gm-ai-branching | `feat(branching): add {branch-type} branch for Star {n}` | branches/* |
+| 5 | gm-ai-mission-builder | `feat(missions): add all missions for Star {n}` | missions/star_{n}/* |
+| 6 | gm-ai-mission-critiquer | `review(mission): add suggestions for Mission {n}.{m}` | MISSION_{n}_{m}_SUGGESTIONS.md |
+| 6 | gm-ai-mission-builder | `fix(mission): apply review feedback to Mission {n}.{m}` | missions/star_{n}/MISSION_{n}_{m}.* |
+| 7 | **gm-ai-orchestrator** | `chore(archive): add final GALAXY_MAP.json` | GALAXY_MAP.json |
 
 ---
 

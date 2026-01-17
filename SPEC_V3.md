@@ -72,19 +72,20 @@ Galaxy Maps AI V3 transforms the monolithic multi-agent system into a collection
 **Purpose**: Main coordinator that manages the multi-agent workflow
 
 **Responsibilities**:
-1. Initialize and manage git repository
+1. Initialize git repository (`git init` only)
 2. Orchestrate workflow in correct sequence
 3. Handle user decisions between phases
 4. Spawn sub-skills using Skill/Task tools
-5. Commit and push files at checkpoints
-6. Transform output to saveGalaxyMap() JSON
+5. Transform output to saveGalaxyMap() JSON
+6. Commit final GALAXY_MAP.json archive
+7. Push to remote repository
 
 **Recommended Tools**:
 | Tool | Purpose |
 |------|---------|
-| Git MCP Server | Repository operations |
+| Git MCP Server | Init, final commit, push only |
 | GitHub MCP Server | Remote repo management |
-| File System MCP | Read/write files |
+| File System MCP | Read files for transformation |
 | Firebase MCP | Database operations |
 
 **Triggers**:
@@ -108,14 +109,21 @@ Galaxy Maps AI V3 transforms the monolithic multi-agent system into a collection
 5. Timing - duration and pacing
 6. Assessment - mastery measurement
 
+**Responsibilities**:
+1. Interactive session to gather intent across 6 areas
+2. Write INTENT.md file
+3. **Commit INTENT.md** with message: `"feat(intent): capture curriculum intent for {mapTitle}"`
+4. Return handoff to orchestrator
+
 **Recommended Tools**:
 | Tool | Purpose |
 |------|---------|
+| Git MCP Server | Commit INTENT.md |
 | Audience Profiler MCP | Learner personas |
 | Topic Taxonomy MCP | Subject standards |
 | Duration Estimator | Timing calculations |
 
-**Output**: `INTENT.md`
+**Output**: `INTENT.md` (committed)
 
 ---
 
@@ -129,17 +137,26 @@ Galaxy Maps AI V3 transforms the monolithic multi-agent system into a collection
 - Stars: 1-2 days, ONE clear milestone, tangible outcome
 - Missions: 15-60 minutes, atomic, scaffolded LOs
 
+**Responsibilities**:
+1. Generate 3 alternative structures in `alternatives.md` (temporary, not committed)
+2. After user selection, write MAP_V1.md
+3. **Commit MAP_V1.md** with message: `"feat(curriculum): add curriculum structure v1"`
+4. On refinement iterations, write MAP_V{n+1}.md
+5. **Commit MAP_V{n+1}.md** with message: `"feat(curriculum): add curriculum structure v{n+1}"`
+6. Return handoff to orchestrator
+
 **Recommended Tools**:
 | Tool | Purpose |
 |------|---------|
+| Git MCP Server | Commit MAP files |
 | Learning Standards MCP | Educational standards |
 | Bloom's Taxonomy Tool | Cognitive levels |
 | Prerequisite Graph | Dependency analysis |
 | Parallel Model Invocation | Multi-LLM alternatives |
 
 **Outputs**:
-- `alternatives.md` (initial generation)
-- `MAP_V{n}.md`
+- `alternatives.md` (initial generation, not committed)
+- `MAP_V{n}.md` (committed)
 
 ---
 
@@ -154,14 +171,21 @@ Galaxy Maps AI V3 transforms the monolithic multi-agent system into a collection
 - Level 2: Star (size, focus, outcome, position)
 - Level 3: Mission (atomicity, scaffolding, clarity, necessity)
 
+**Responsibilities**:
+1. Interactive critique session with user
+2. Generate MAP_V{n}_SUGGESTIONS.md
+3. **Commit suggestions** with message: `"review(curriculum): add suggestions for MAP v{n}"`
+4. Return handoff to orchestrator (triggers curriculum regeneration if approved)
+
 **Recommended Tools**:
 | Tool | Purpose |
 |------|---------|
+| Git MCP Server | Commit suggestions |
 | Pedagogical Analyzer | Best practices check |
 | Scope Validator | Coverage verification |
 | Transition Analyzer | Gap detection |
 
-**Output**: `MAP_V{n}_SUGGESTIONS.md`
+**Output**: `MAP_V{n}_SUGGESTIONS.md` (committed)
 
 ---
 
@@ -178,14 +202,22 @@ Galaxy Maps AI V3 transforms the monolithic multi-agent system into a collection
 4. Real-World Application - industry context
 5. History/Context - background information
 
+**Responsibilities**:
+1. For each star, identify 0-3 valuable branch opportunities
+2. Generate branches/STAR_{n}_BRANCH_{m}.md for each branch
+3. **Commit branches** with message: `"feat(branching): add {branch-type} branch for Star {n}"`
+   - Can commit individually or batch per star
+4. Return handoff to orchestrator
+
 **Recommended Tools**:
 | Tool | Purpose |
 |------|---------|
+| Git MCP Server | Commit branch files |
 | Topic Explorer MCP | Knowledge graph traversal |
 | Wikipedia/Wikidata API | Research |
 | Industry Trends MCP | Real-world applications |
 
-**Output**: `branches/STAR_{n}_BRANCH_{m}.md`
+**Output**: `branches/STAR_{n}_BRANCH_{m}.md` (committed)
 
 ---
 
@@ -203,9 +235,17 @@ Galaxy Maps AI V3 transforms the monolithic multi-agent system into a collection
 5. Check - understanding verification
 6. Bridge - next mission connection
 
+**Responsibilities**:
+1. For assigned star, generate all mission content
+2. Write MISSION_{n}_{m}.md and MISSION_{n}_{m}.html for each mission
+3. **Commit missions** with message: `"feat(missions): add all missions for Star {n}"`
+   - Can commit individually per mission or batch per star
+4. Return handoff to orchestrator
+
 **Recommended Tools**:
 | Tool | Purpose |
 |------|---------|
+| Git MCP Server | Commit mission files |
 | YouTube MCP | Educational videos |
 | D3/Visualization Generator | Diagrams |
 | Code Playground Embedder | Runnable examples |
@@ -213,8 +253,8 @@ Galaxy Maps AI V3 transforms the monolithic multi-agent system into a collection
 | Code Validator | Syntax checking |
 
 **Outputs**:
-- `MISSION_{n}_{m}.md`
-- `MISSION_{n}_{m}.html`
+- `missions/star_{n}/MISSION_{n}_{m}.md` (committed)
+- `missions/star_{n}/MISSION_{n}_{m}.html` (committed)
 
 ---
 
@@ -233,15 +273,24 @@ Galaxy Maps AI V3 transforms the monolithic multi-agent system into a collection
 6. Scaffolding
 7. Completeness
 
+**Responsibilities**:
+1. Interactive critique session for target mission
+2. Generate MISSION_{n}_{m}_SUGGESTIONS.md
+3. **Commit suggestions** with message: `"review(mission): add suggestions for Mission {n}.{m}"`
+4. If user approves regeneration, spawn mission-builder to recreate mission
+5. Mission-builder **commits updated mission** with message: `"fix(mission): apply review feedback to Mission {n}.{m}"`
+6. Return handoff to orchestrator
+
 **Recommended Tools**:
 | Tool | Purpose |
 |------|---------|
+| Git MCP Server | Commit suggestions |
 | Readability Analyzer | Language level |
 | Code Linter | Syntax validation |
 | HTML Validator | Accessibility |
 | LO Coverage Checker | Objective alignment |
 
-**Output**: `MISSION_{n}_{m}_SUGGESTIONS.md`
+**Output**: `MISSION_{n}_{m}_SUGGESTIONS.md` (committed)
 
 ---
 
@@ -250,89 +299,115 @@ Galaxy Maps AI V3 transforms the monolithic multi-agent system into a collection
 ```
 PHASE 1: INTENT CAPTURE
 ------------------------
-User -> gm-ai-orchestrator -> gm-ai-intent
-                                   |
-                                   v
-                            [Interactive session]
-                            [6 areas of intent]
-                                   |
-                                   v
-                            gm-ai-intent -> gm-ai-orchestrator
-                            files: [INTENT.md]
-                                   |
-                                   v
-                            git init, commit INTENT.md
+gm-ai-orchestrator:
+  - git init ~/galaxy-maps/{map-slug}
+  - spawn gm-ai-intent
+
+gm-ai-intent:
+  - [Interactive session - 6 areas of intent]
+  - Write INTENT.md
+  - git add INTENT.md
+  - git commit -m "feat(intent): capture curriculum intent for {mapTitle}"
+  - return handoff to orchestrator
 
 
 PHASE 2: CURRICULUM GENERATION
 ------------------------------
-gm-ai-orchestrator -> gm-ai-curriculum
-                           |
-                           v
-                     [Generate 3 alternatives]
-                           |
-                           v
-                     User selects preferred structure
-                           |
-                           v
-                     commit MAP_V1.md
+gm-ai-orchestrator -> spawn gm-ai-curriculum
+
+gm-ai-curriculum:
+  - Generate alternatives.md (not committed)
+  - [User selects preferred structure]
+  - Write MAP_V1.md
+  - git add MAP_V1.md
+  - git commit -m "feat(curriculum): add curriculum structure v1"
+  - return handoff to orchestrator
 
 
 PHASE 3: STRUCTURE CRITIQUE (Optional, Repeatable)
 --------------------------------------------------
-gm-ai-orchestrator -> gm-ai-curriculum-critiquer
-                           |
-                           v
-                     [Interactive critique session]
-                     [User approves/declines]
-                           |
-                           v
-                     gm-ai-curriculum regenerates with suggestions
-                           |
-                           v
-                     commit MAP_V{n+1}.md
+gm-ai-orchestrator -> spawn gm-ai-curriculum-critiquer
+
+gm-ai-curriculum-critiquer:
+  - [Interactive critique session]
+  - Write MAP_V{n}_SUGGESTIONS.md
+  - git add MAP_V{n}_SUGGESTIONS.md
+  - git commit -m "review(curriculum): add suggestions for MAP v{n}"
+  - [User approves/declines]
+  - return handoff to orchestrator
+
+gm-ai-orchestrator -> spawn gm-ai-curriculum (if approved)
+
+gm-ai-curriculum:
+  - Write MAP_V{n+1}.md
+  - git add MAP_V{n+1}.md
+  - git commit -m "feat(curriculum): add curriculum structure v{n+1}"
+  - return handoff to orchestrator
 
 
 PHASE 4: BRANCHING SIDE-QUESTS
 ------------------------------
-gm-ai-orchestrator -> gm-ai-branching
-                           |
-                           v
-                     [Generate branch mini-curricula]
-                           |
-                           v
-                     commit branches/*
+gm-ai-orchestrator -> spawn gm-ai-branching
+
+gm-ai-branching:
+  - For each star, generate branch files
+  - Write branches/STAR_{n}_BRANCH_{m}.md
+  - git add branches/*
+  - git commit -m "feat(branching): add {branch-type} branch for Star {n}"
+  - return handoff to orchestrator
 
 
 PHASE 5: MISSION BUILDING (Parallel)
 ------------------------------------
-gm-ai-orchestrator -> gm-ai-mission-builder (x N parallel)
-                           |
-                           +-> Star 1 missions
-                           +-> Star 2 missions
-                           +-> Star N missions
-                           |
-                           v (parallel completion)
-                     commit missions/*
+gm-ai-orchestrator -> spawn N parallel gm-ai-mission-builder instances
+
+gm-ai-mission-builder (Star 1):
+  - Generate missions 1.1, 1.2, 1.3...
+  - Write missions/star_1/MISSION_1_*.md and MISSION_1_*.html
+  - git add missions/star_1/*
+  - git commit -m "feat(missions): add all missions for Star 1"
+  - return handoff to orchestrator
+
+gm-ai-mission-builder (Star 2):
+  - Generate missions 2.1, 2.2...
+  - Write missions/star_2/MISSION_2_*.md and MISSION_2_*.html
+  - git add missions/star_2/*
+  - git commit -m "feat(missions): add all missions for Star 2"
+  - return handoff to orchestrator
+
+[No orchestrator bottleneck - each commits independently]
 
 
 PHASE 6: MISSION CRITIQUE (Optional, Parallel)
 ----------------------------------------------
-gm-ai-orchestrator -> gm-ai-mission-critiquer (x N parallel)
-                           |
-                           v
-                     [Interactive sessions]
-                     [Regenerate as needed]
+gm-ai-orchestrator -> spawn gm-ai-mission-critiquer instances
+
+gm-ai-mission-critiquer:
+  - [Interactive critique session]
+  - Write MISSION_{n}_{m}_SUGGESTIONS.md
+  - git add MISSION_{n}_{m}_SUGGESTIONS.md
+  - git commit -m "review(mission): add suggestions for Mission {n}.{m}"
+  - [If approved, spawn mission-builder]
+  - return handoff to orchestrator
+
+gm-ai-mission-builder (regeneration):
+  - Update MISSION_{n}_{m}.md and MISSION_{n}_{m}.html
+  - git add missions/star_{n}/MISSION_{n}_{m}.*
+  - git commit -m "fix(mission): apply review feedback to Mission {n}.{m}"
+  - return handoff to orchestrator
 
 
 PHASE 7: FINALIZE & PUBLISH
 ---------------------------
 gm-ai-orchestrator:
-  1. Transform repo files -> saveGalaxyMap JSON
-  2. Call saveGalaxyMap() cloud function
-  3. Commit GALAXY_MAP.json (archive)
-  4. Push to remote
-  5. Return courseId to user
+  1. Read all committed files from repository
+  2. Transform repo files -> saveGalaxyMap JSON
+  3. Write GALAXY_MAP.json
+  4. git add GALAXY_MAP.json
+  5. git commit -m "chore(archive): add final GALAXY_MAP.json"
+  6. git push origin main
+  7. Call saveGalaxyMap() cloud function
+  8. Return courseId to user
 ```
 
 ---
@@ -386,11 +461,19 @@ status: draft | review | approved
   "from": "gm-ai-{skill}",
   "to": "gm-ai-orchestrator",
   "status": "complete | needs-input | error",
-  "files": ["file1.md", "file2.html"],
+  "committed": true,
+  "commitSha": "abc123def456...",
+  "commitMessage": "feat(intent): capture curriculum intent for Python Basics",
+  "files": ["INTENT.md"],
   "stats": { ... },
-  "message": "Human-readable status message"
+  "message": "Intent captured and committed successfully"
 }
 ```
+
+**New Fields**:
+- `committed` (boolean): Indicates files are committed to git
+- `commitSha` (string): Git commit hash for traceability
+- `commitMessage` (string): Actual commit message used
 
 ---
 
@@ -476,6 +559,11 @@ gm-ai-v3/
 6. **Cost Optimization**: Use appropriate model tiers per skill
 7. **Debugging**: Issues isolated to specific skills
 8. **Documentation**: Each skill has focused, clear documentation
+9. **Atomic Work Units**: Each skill owns complete unit of work (create + commit)
+10. **No Commit Bottleneck**: Parallel skills commit independently without coordination
+11. **Resilience**: Work is persisted immediately; orchestrator failure doesn't lose work
+12. **Clear Git History**: Commits show which skill did what with domain-specific messages
+13. **Reduced Orchestrator Complexity**: ~40% fewer responsibilities
 
 ---
 

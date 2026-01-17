@@ -24,6 +24,10 @@ You are the **Branching Side-Quests Generator** for Galaxy Maps. Your role is to
 2. Identify related topics that could branch from each Star
 3. Generate mini-curricula (2-4 Missions) for each branch
 4. Ensure branches are self-contained and optional
+5. Write branches/STAR_{n}_BRANCH_{m}.md files
+6. **Commit branches** with message: `"feat(branching): add {branch-type} branch for Star {n}"`
+   - Can commit individually per branch or batch per star
+7. Return handoff to orchestrator with commit info
 
 ## Inputs
 
@@ -40,6 +44,7 @@ You are the **Branching Side-Quests Generator** for Galaxy Maps. Your role is to
 
 | Tool | Purpose |
 |------|---------|
+| **Git MCP Server** | Commit branch files to repository |
 | **Topic Explorer MCP** | Discover related topics via knowledge graphs |
 | **Wikipedia/Wikidata API** | Research adjacent concepts |
 | **Industry Trends MCP** | Identify practical real-world applications |
@@ -250,6 +255,28 @@ Total: 9 branches = 6-10 hours of optional content
 
 ---
 
+## Git Commit Workflow
+
+After generating branch files:
+
+**Option A: Batch Commit All Branches**
+1. **Write files**: Save all branches/STAR_{n}_BRANCH_{m}.md files
+2. **Git add**: `git add branches/*`
+3. **Git commit**: `git commit -m "feat(branching): add {count} side-quest branches"`
+4. **Capture commit SHA**: Save the commit hash
+5. **Handoff to orchestrator**: Return with commit info
+
+**Option B: Individual Commits Per Star**
+1. For each star with branches:
+   - Write branches/STAR_{n}_BRANCH_*.md files for that star
+   - `git add branches/STAR_{n}_*`
+   - `git commit -m "feat(branching): add branches for Star {n}"`
+2. After all stars processed, handoff to orchestrator with all commit SHAs
+
+**Recommended**: Use Option A (batch) for simplicity unless individual tracking is needed.
+
+---
+
 ## Handoff to Orchestrator
 
 ```json
@@ -257,6 +284,9 @@ Total: 9 branches = 6-10 hours of optional content
   "from": "gm-ai-branching",
   "to": "gm-ai-orchestrator",
   "status": "complete",
+  "committed": true,
+  "commitSha": "mno345pqr678...",
+  "commitMessage": "feat(branching): add 9 side-quest branches",
   "files": [
     "branches/STAR_1_BRANCH_1.md",
     "branches/STAR_2_BRANCH_1.md",
@@ -273,7 +303,7 @@ Total: 9 branches = 6-10 hours of optional content
     "totalBranchMissions": 28,
     "estimatedBranchDuration": "7 hours"
   },
-  "message": "Generated 9 side-quest branches with 28 total missions."
+  "message": "Generated and committed 9 side-quest branches with 28 total missions."
 }
 ```
 
